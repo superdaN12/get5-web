@@ -5,33 +5,32 @@
 
   <div class="container">
     <h1>
-      {{ team.get_flag_html(1.0) }} {{ team.name }} {{ team.get_logo_html(1.0) }}
+      <b>{{ team.get_flag_html(1.0) }} {{ team.name }} {{ team.get_logo_html(1.0) }}</b>
       {% if team.can_edit(user) %}
-      <div class="pull-right">
-        <a href="/team/{{team.id}}/edit" class="btn btn-primary btn-xs">Edit</a>
+      <div class="text-right">
+        <a href="/team/{{team.id}}/edit" class="btn btn-primary btn-sm">Edit</a>
       </div>
       {% endif %}
     </h1>
 
     <br>
 
-    <div class="panel panel-default">
-      <div class="panel-heading">Players</div>
-      <div class="panel-body">
+    <div class="card">
+      <div class="card-header">Players</div>
+      <div class="card-body">
           {% for auth,name in team.get_players() %}
           <a href="http://steamcommunity.com/profiles/{{auth}}" class="col-sm-offset-0"> {{auth}}</a>
           {% if name %}
-          {{name}}
+          - {{name}}
           {% endif %}
           <br>
           {% endfor %}
       </div>
     </div>
-
-
-    <div class="panel panel-default">
-      <div class="panel-heading">Recent Matches</div>
-        <div class="panel-body">
+    <br>
+    <div class="card">
+      <div class="card-header">Recent Matches</div>
+        <div class="card-body">
           {% for match in team.get_recent_matches() %}
             <a href="/match/{{match.id}}">#{{match.id}}</a>: {{ team.get_vs_match_result(match.id) }}
             <br>

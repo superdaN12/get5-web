@@ -1,13 +1,28 @@
-get5-web BETA
+get5-web BETA by superdaN1
 ===========================
-
-[![Build Status](https://travis-ci.org/splewis/get5-web.svg?branch=master)](https://travis-ci.org/splewis/get5-web)
 
 **Status: Experimental, not supported.**
 
+
+**Updated version of splewis get5 web BETA.**
+
+**NEW:** 
+ - Updated Bootstrap Framework and updated UI for every page.
+ - Integrated possibility to start a Dathost server via API.
+ - Possibility to create a match with predefined maps and series type.
+ - - Possibility to set vetoed team side pick.
+ - GOTV demo download after a match is finished.
+ - Filter matches by league/bracket
+ - Get GOTV IP via popup while a match is live.
+ - Custom fields for teams, gameserver etc.
+ - Possibility to delete a match at "My Matches" if the match isn't started yet.
+ - Updated database to allow playernames with UTF-8 characters
+
+
+
+**Original:**
 This is an **experimental** (proof-of-concept) web panel meant to be used in conjunction with the [get5](https://github.com/splewis/get5) CS:GO server plugin. It provides a more convenient way of managing matches and match servers.
 
-**WARNING**: YOU SHOULD NOT USE THIS. IT HAS BUGS. IT HAS NO SUPPORT. **The get5 plugin itself is supported - this webpanel itself has NO support.** If you want a working webpanel for get5, look elsewhere or develop your own.
 
 
 ## How to use it:
@@ -21,7 +36,10 @@ As the match owner, you will be able to cancel the match. Additionally, on its m
 
 Note: when using this web panel, the CS:GO game servers **must** be have both the core get5 plugin and the get5_apistats plugin. They are [released](https://github.com/splewis/get5/releases) together. This means the server must also be running the [Steamworks](https://forums.alliedmods.net/showthread.php?t=229556) and [SMJansson](https://forums.alliedmods.net/showthread.php?t=184604) extensions.
 
-## Screenshots
+**WARNING**: This should be considered **BETA** software - it should not be considered STABLE and will contain BUGS. Changes in the master branch may be incompatible until it is given a 1.0.0 release tag. **The get5 plugin itself is suported - this webpanel only has very limited support.**
+
+
+## Screenshots (Updated)
 
 ![Match Creation Page](/screenshots/create_match.png?raw=true "Match Creation Page")
 

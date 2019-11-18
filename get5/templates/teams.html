@@ -4,53 +4,61 @@
 {% block content %}
 
 <div id="content">
-
-  <h1>
-  {% if my_teams %}
-  Your teams
-  {% else %}
-  Teams for <a href="/user/{{ owner.id }}"> {{ owner.name }}</a>
-  {% endif%}
-  </h1>
-
-  <ul class="list-group">
-
+  <div class="container">
+    <h1>
+      {% if my_teams %}
+        All teams
+      {% else %}
+      Teams for <a href="/user/{{ owner.id }}"> {{ owner.name }}</a>
+      {% endif%}
+    </h1>
+    <br>
     {% if (teams.items | length) == 0 %}
-    <li class="list-group-item">
-    No teams found.
-    </li>
+      <li class="list-group-item">
+        No teams found.
+      </li>
     {% endif %}
+  </div>
 
+  <div class="container">
     {% for team in teams.items %}
-    <li class="list-group-item">
-
-      {{ team.get_flag_html(0.75) }}
-
-      <a href="{{ team.get_url() }}" class="col-sm-offset-1"> {{team.name}}</a>
-
-      {{ team.get_logo_html(0.75) }}
-
-      {% if team.can_delete(user) %}
-      <div class="pull-right">
-        <a href="/team/{{team.id}}/delete" class="btn btn-danger btn-xs">Delete</a>
+    <div class="row">
+      <div class="col-6">
+        {{ team.get_flag_html(0.75) }}
+        <a href="{{ team.get_url() }}" class="col-sm-offset-1"> {{team.name}}</a>
+        {{ team.get_logo_html(0.75) }}
       </div>
-      {% endif %}
-
-      {% if team.can_edit(user) %}
-      <div class="pull-right">
-        <a href="/team/{{team.id}}/edit" class="btn btn-primary btn-xs">Edit</a>
+      <div class="col-4"> 
+        {% if team.can_delete(user) %}
+          <a href="/team/{{team.id}}/delete" class="btn btn-danger btn-sm">Delete</a>
+        {% endif %}
+        {% if team.can_edit(user) %}
+          <a href="/team/{{team.id}}/edit" class="btn btn-primary btn-sm">Edit</a>
+        {% endif %}
       </div>
-      {% endif %}
-
-    </li>
+    </div>
+    <hr>
     {% endfor %}
-  </ul>
+  </div>
+  <br>
 
-  {{ pagination_buttons(teams) }}
+  <div class="container">
+    <div class="text-center">
+      {% for team_num in teams.iter_pages() %}
+        {% if team_num %}
+          {% if teams.page == team_num %}
+            <a class="btn btn-info mb-4" id="page{{team_num}}" href="{{request.path}}?page={{team_num}}">{{ team_num }}</a>
+          {% else %}
+            <a class="btn btn-outline-info mb-4" id="page{{team_num}}"" href="{{request.path}}?page={{team_num}}">{{ team_num }}</a>
+          {% endif %}
+        {% else %}
+          ...
+        {% endif %}
 
+      {% endfor %}
+    </div>
+  </div>
 </div>
-
-{{ pagination_active(teams) }}
 
 {% if my_teams %}
 <script>

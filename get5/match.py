@@ -1,4 +1,4 @@
-from flask import Blueprint, request, render_template, flash, g, redirect, jsonify, Markup
+from flask import Blueprint, request, render_template, flash, g, redirect, jsonify, Markup, send_file, send_from_directory
 
 import steamid
 import get5
@@ -6,9 +6,15 @@ from get5 import app, db, BadRequestError, config_setting
 from models import User, Team, Match, GameServer
 import util
 
+import zipfile
+import io
+import pathlib
+
+import os, json, requests
+
 from wtforms import (
     Form, widgets, validators,
-    StringField, RadioField,
+    StringField, RadioField, 
     SelectField, ValidationError, SelectMultipleField)
 
 match_blueprint = Blueprint('match', __name__)
@@ -23,6 +29,9 @@ def different_teams_validator(form, field):
     if form.team1_id.data == form.team2_id.data:
         raise ValidationError('Teams cannot be equal')
 
+def different_maps_validator(form, field):
+    if form.mappick_team1.data == form.mappick_team2.data:
+        raise ValidationError('Maps cannot be equal')
 
 def mappool_validator(form, field):
     if 'preset' in form.series_type.data and len(form.veto_mappool.data) != 1:
@@ -35,7 +44,7 @@ def mappool_validator(form, field):
     except ValueError:
         max_maps = 1
 
-    if len(form.veto_mappool.data) < max_maps:
+    if len(form.veto_mappool.data) < max_maps and max_maps != 2:
         raise ValidationError(
             'You must have at least {} maps selected to do a Bo{}'.format(max_maps, max_maps))
 
@@ -50,40 +59,59 @@ class MatchForm(Form):
 
     series_type = RadioField('Series type',
                              validators=[validators.required()],
-                             default='bo1',
+                             default='bo2',
                              choices=[
-                                 ('bo1-preset', 'Bo1 with preset map'),
-                                 ('bo1', 'Bo1 with map vetoes'),
-                                 ('bo2', 'Bo2 with map vetoes'),
-                                 ('bo3', 'Bo3 with map vetoes'),
-                                 ('bo5', 'Bo5 with map vetoes'),
-                                 ('bo7', 'Bo7 with map vetoes'),
+                                 ('bo1-preset', 'Bo1 with preset map - (Knife preset, ignore sidepick of teams)'),
+                                 ('bo2', 'Bo2 with preset maps - (Sidepick A & B)'),
+                                 ('bo3', 'Bo3 with preset maps - (Sidepick A & B + Knife)'),
                              ])
 
-    team1_id = SelectField('Team 1', coerce=int,
+    sidepick_team1 = RadioField('Sidepick Team A for Map 2 (BO2/BO3)',
+                                validators=[validators.required()],
+                                default='team1_ct',
+                                choices =[
+                                    ('team1_ct', 'CT'),
+                                    ('team1_t', 'T'),
+                                ])
+
+    sidepick_team2 = RadioField('Sidepick Team B for Map 1 (BO2/BO3)',
+                                validators=[validators.required()],
+                                default='team2_ct',
+                                choices =[
+                                    ('team2_ct', 'CT'),
+                                    ('team2_t', 'T'),
+                                ])
+
+    team1_id = SelectField('Team A', coerce=int,
                            validators=[validators.required()])
 
-    team1_string = StringField('Team 1 title text',
+    team1_string = StringField('Team A title text',
                                default='',
                                validators=[validators.Length(min=-1,
                                                              max=Match.team1_string.type.length)])
 
-    team2_id = SelectField('Team 2', coerce=int,
+    mappick_team1 = SelectField('Mappick Team A')
+
+    team2_id = SelectField('Team B', coerce=int,
                            validators=[validators.required(), different_teams_validator])
 
-    team2_string = StringField('Team 2 title text',
+    team2_string = StringField('Team B title text',
                                default='',
                                validators=[validators.Length(min=-1,
                                                              max=Match.team2_string.type.length)])
 
+    mappick_team2 = SelectField('Mappick Team B', default='')
+
+    mappick_bo3 = SelectField('Mappick Last Map BO3', default='')
+
     mapchoices = config_setting('MAPLIST')
     default_mapchoices = config_setting('DEFAULT_MAPLIST')
+
     veto_mappool = MultiCheckboxField('Map pool',
                                       choices=map(lambda name: (
                                           name, util.format_mapname(
                                               name)), mapchoices),
                                       default=default_mapchoices,
-                                      validators=[mappool_validator],
                                       )
 
     def add_teams(self, user):
@@ -99,9 +127,12 @@ class MatchForm(Form):
                 team_ids.append(team.id)
 
         team_tuples = []
+    
         for teamid in team_ids:
             team_tuples.append((teamid, Team.query.get(teamid).name))
 
+        team_tuples.sort(key=lambda tup: tup[1])
+        
         self.team1_id.choices += team_tuples
         self.team2_id.choices += team_tuples
 
@@ -125,6 +156,27 @@ class MatchForm(Form):
 
         self.server_id.choices += server_tuples
 
+    def add_maps(self, user):
+        if self.mappick_team1.choices is None:
+            self.mappick_team1.choices = []
+        
+        mapchoices = config_setting('MAPLIST')
+
+        if self.mappick_team2.choices is None:
+            self.mappick_team2.choices = []
+
+        self.mappick_team1.choices = map(lambda name: (
+                                          name, util.format_mapname(
+                                              name)), mapchoices)
+
+        self.mappick_team2.choices = map(lambda name: (
+                                          name, util.format_mapname(
+                                              name)), mapchoices)
+
+        self.mappick_bo3.choices = map(lambda name: (
+                                          name, util.format_mapname(
+                                              name)), mapchoices)
+
 
 @match_blueprint.route('/match/create', methods=['GET', 'POST'])
 def match_create():
@@ -134,6 +186,7 @@ def match_create():
     form = MatchForm(request.form)
     form.add_teams(g.user)
     form.add_servers(g.user)
+    form.add_maps(g.user)
 
     if request.method == 'POST':
         num_matches = g.user.matches.count()
@@ -180,7 +233,10 @@ def match_create():
                     g.user, form.data['team1_id'], form.data['team2_id'],
                     form.data['team1_string'], form.data['team2_string'],
                     max_maps, skip_veto, form.data['match_title'],
-                    form.data['veto_mappool'], form.data['server_id'])
+                    form.data['veto_mappool'], form.data['server_id'],
+                    form.data['mappick_team1'], form.data['mappick_team2'], 
+                    form.data['sidepick_team1'], form.data['sidepick_team2'],
+                    form.data['mappick_bo3'])
 
                 # Save plugin version data if we have it
                 if json_reply and 'plugin_version' in json_reply:
@@ -253,6 +309,21 @@ def admintools_check(user, match):
     if match.cancelled:
         raise BadRequestError('Match is cancelled')
 
+def admintools_checkdelete(user, match):
+    if user is None:
+        raise BadRequestError('You do not have access to this page')
+
+    grant_admin_access = user.admin and get5.config_setting(
+        'ADMINS_ACCESS_ALL_MATCHES')
+    if user.id != match.user_id and not grant_admin_access:
+        raise BadRequestError('You do not have access to this page')
+
+    if match.finished():
+        raise BadRequestError('Match already finished')
+
+    if match.start_time is not None:
+        raise BadRequestError('Match already started')
+
 
 @match_blueprint.route('/match/<int:matchid>/cancel')
 def match_cancel(matchid):
@@ -273,6 +344,76 @@ def match_cancel(matchid):
 
     return redirect('/mymatches')
 
+@match_blueprint.route('/match/<int:matchid>/delete')
+def match_delete(matchid):
+    match = Match.query.get_or_404(matchid)
+    admintools_checkdelete(g.user, match)
+
+    if match.cancelled: 
+        try:
+            db.session.delete(match)
+            db.session.commit()
+        except Exception as e:
+            flash('Failed to delete match: ' + str(e))
+
+    return redirect('/mymatches')
+    
+@match_blueprint.route('/match/<int:matchid>/load_file/')
+def load_file(matchid):
+    match = Match.query.get_or_404(matchid)
+    demoname = '{}map1{}'.format('49', match.mappick_team1)
+
+    # zf = zipfile.ZipFile(demoname + '.zip','w')
+    # files = result['files']
+    # for individualFile in files:
+    #     data = zipfile.ZipInfo(individualFile[demoname + '.dem'])
+    #     data.date_time = time.localtime(time.time())[:6]
+    #     data.compress_type = zipfile.ZIP_DEFLATED
+    #     zf.writestr(data,individualFile[demoname + '.dem'])
+    # return send_file(BytesIO(zf), attachment_filename=demoname + '.zip', as_attachment=True)
+
+    return send_from_directory(
+        '/home/ftpdemos/', 
+        demoname + '.zip',
+        as_attachment=True,
+        attachment_filename= demoname + '.zip'
+    )
+
+@match_blueprint.route('/match/<int:matchid>/load_demo_map1/')
+def load_demo_map1(matchid):
+    match = Match.query.get_or_404(matchid)
+    demoname = '{}map1{}'.format(match.id, match.mappick_team1)
+
+    return send_from_directory(
+        '/home/ftpdemos/', 
+        demoname + '.zip',
+        as_attachment=True,
+        attachment_filename= demoname + '.zip'
+    )
+
+@match_blueprint.route('/match/<int:matchid>/load_demo_map2/')
+def load_demo_map2(matchid):
+    match = Match.query.get_or_404(matchid)
+    demoname = '{}map2{}'.format(match.id, match.mappick_team2)
+
+    return send_from_directory(
+        '/home/ftpdemos/', 
+        demoname + '.zip',
+        as_attachment=True,
+        attachment_filename= demoname + '.zip'
+    )
+
+@match_blueprint.route('/match/<int:matchid>/load_demo_map3/')
+def load_demo_map3(matchid):
+    match = Match.query.get_or_404(matchid)
+    demoname = '{}map3{}'.format(match.id, match.mappick_bo3)
+
+    return send_from_directory(
+        '/home/ftpdemos/', 
+        demoname + '.zip',
+        as_attachment=True,
+        attachment_filename= demoname + '.zip'
+    )
 
 @match_blueprint.route('/match/<int:matchid>/rcon')
 def match_rcon(matchid):
@@ -408,13 +549,45 @@ def matches():
     return render_template('matches.html', user=g.user, matches=matches,
                            my_matches=False, all_matches=True, page=page)
 
+@match_blueprint.route("/matchesliga1")
+def matchesliga2():
+    page = util.as_int(request.values.get('page'), on_fail=1)
+    matches = Match.query.order_by(-Match.id).filter_by(
+        cancelled=False).join(Team, Match.team1_id==Team.id).filter_by(
+            bracket='Liga 1').paginate(page, 20)
+
+    return render_template('matchesliga1.html', user=g.user, matches=matches,
+                           my_matches=False, all_matches=True, page=page)
+
+@match_blueprint.route("/matchesliga2")
+def matchesliga1():
+    page = util.as_int(request.values.get('page'), on_fail=1)
+    matches = Match.query.order_by(-Match.id).filter_by(
+        cancelled=False).join(Team, Match.team1_id==Team.id).filter_by(
+            bracket='Liga 2').paginate(page, 20)
+    return render_template('matchesliga2.html', user=g.user, matches=matches,
+                           my_matches=False, all_matches=True, page=page)
+
+@match_blueprint.route("/matchesliga3")
+def matchesliga3():
+    page = util.as_int(request.values.get('page'), on_fail=1)
+    matches = Match.query.order_by(-Match.id).filter_by(
+        cancelled=False).join(Team, Match.team1_id==Team.id).filter_by(
+            bracket='Liga 3').paginate(page, 20)
+    return render_template('matchesliga3.html', user=g.user, matches=matches,
+                           my_matches=False, all_matches=True, page=page)
 
 @match_blueprint.route("/matches/<int:userid>")
 def matches_user(userid):
     user = User.query.get_or_404(userid)
     page = util.as_int(request.values.get('page'), on_fail=1)
-    matches = user.matches.order_by(-Match.id).paginate(page, 20)
-    is_owner = (g.user is not None) and (userid == g.user.id)
+    if user.admin:
+        matches= Match.query.order_by(-Match.id).paginate(page, 20)
+        is_owner = user.admin
+    else:
+        matches = user.matches.order_by(-Match.id).paginate(page, 20)
+        is_owner = (g.user is not None) and (userid == g.user.id)
+   
     return render_template('matches.html', user=g.user, matches=matches,
                            my_matches=is_owner, all_matches=False, match_owner=user, page=page)
 

@@ -7,7 +7,6 @@
 
  {{ show_flashed_messages() }}
 
-
   <div class="alert alert-info" role="alert">
     <p>
      Make sure your server is running and has the get5 server plugins installed first.
@@ -19,43 +18,58 @@
 
       {{ form.csrf_token }}
 
-      <div class="form-group">
+      <div class="form-group row">
       {{ form.display_name.label(class="col-sm-2 control-label") }}
-        <div class="col-sm-7">
+        <div class="col-sm-6">
           {{ form.display_name(class="form-control", placeholder="Optional") }}
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group row">
       {{ form.ip_string.label(class="col-sm-2 control-label") }}
-        <div class="col-sm-7">
+        <div class="col-sm-6">
           {{ form.ip_string(class="form-control", placeholder="Server IP") }}
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group row">
       {{ form.port.label(class="col-sm-2 control-label") }}
-        <div class="col-sm-7">
+        <div class="col-sm-6">
           {{ form.port(class="form-control", placeholder="27015") }}
         </div>
       </div>
 
-      <div class="form-group">
-      {{ form.rcon_password.label(class="col-sm-2 control-label") }}
-        <div class="col-sm-7">
-          {{ form.rcon_password(class="form-control", placeholder="RCON password") }}
-          <p class="help-block">Your server information will not be exposed to other users.</p>
+      <div class="form-group row">
+      {{ form.gotv_port.label(class="col-sm-2 control-label") }}
+          <div class="col-sm-6">
+            {{ form.gotv_port(class="form-control", placeholder="27020") }}
         </div>
       </div>
 
-      {% if is_admin %}
-      <div class="form-group">
-        {{ form.public_server.label(class="col-sm-2 control-label") }}
-        <div class="col-sm-offset-1">
-          {{ form.public_server() }}
+      <div class="form-group row">
+      {{ form.rcon_password.label(class="col-sm-2 control-label") }}
+        <div class="col-sm-6">
+          {{ form.rcon_password(class="form-control", placeholder="RCON password") }}
+          <p class="text-muted">Your server information will not be exposed to other users.</p>
         </div>
       </div>
-      {% endif %}
+
+      <div class="form-group row">
+        {{ form.dathost_id.label(class="col-sm-2 control-label") }}
+          <div class="col-sm-6">
+            {{ form.dathost_id(class="form-control", placeholder="Dathost ID (Username)") }}
+          </div>
+      </div>
+
+        {% if is_admin %}
+        <div class="form-group row">
+          {{ form.public_server.label(class="col-sm-2 control-label") }}
+          <div class="col-sm-6">
+            {{ form.public_server() }}
+          </div>
+        </div>
+        {% endif %}
+  
 
       {% if edit %}
       <div class="input submit col-sm-offset-1">

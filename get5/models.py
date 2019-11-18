@@ -4,8 +4,8 @@ import logos
 import util
 
 from flask import url_for, Markup
-import requests
-
+import json, requests
+import os
 import datetime
 import string
 import random
@@ -19,6 +19,7 @@ class User(db.Model):
     servers = db.relationship('GameServer', backref='user', lazy='dynamic')
     teams = db.relationship('Team', backref='user', lazy='dynamic')
     matches = db.relationship('Match', backref='user', lazy='dynamic')
+    # adminteams = db.Column('Team', backref='', lazy='dynamic')
 
     @staticmethod
     def get_or_create(steam_id):
@@ -28,8 +29,8 @@ class User(db.Model):
             rv.steam_id = steam_id
             db.session.add(rv)
             app.logger.info('Creating user for {}'.format(steam_id))
-
-        rv.admin = ('ADMIN_IDS' in app.config) and (
+            
+            rv.admin = ('ADMIN_IDS' in app.config) and (
             steam_id in app.config['ADMIN_IDS'])
         return rv
 
@@ -53,18 +54,22 @@ class GameServer(db.Model):
     display_name = db.Column(db.String(32), default='')
     ip_string = db.Column(db.String(32))
     port = db.Column(db.Integer)
+    gotv_port = db.Column(db.Integer)
     rcon_password = db.Column(db.String(32))
     in_use = db.Column(db.Boolean, default=False)
     public_server = db.Column(db.Boolean, default=False, index=True)
+    dathost_id = db.Column(db.String(40))
 
     @staticmethod
-    def create(user, display_name, ip_string, port, rcon_password, public_server):
+    def create(user, display_name, ip_string, port, gotv_port, rcon_password, dathost_id, public_server):
         rv = GameServer()
         rv.user_id = user.id
         rv.display_name = display_name
         rv.ip_string = ip_string
         rv.port = port
+        rv.gotv_port = gotv_port
         rv.rcon_password = rcon_password
+        rv.dathost_id = dathost_id
         rv.public_server = public_server
         db.session.add(rv)
         return rv
@@ -82,13 +87,33 @@ class GameServer(db.Model):
             return '{} ({})'.format(self.display_name, self.get_hostport())
         else:
             return self.get_hostport()
+    
+    def get_displayname(self):
+        return '{}'.format(self.display_name)
+    
+    def get_dathostid(self):
+        return self.dathost_id()
+    
+    def get_dathost_ison(self):
+        #ToDo
+        #Status of Dathost server
+        # response = requests.get('https://dathost.net/api/0.1/game-servers/{}'.format(self.dathost_id), auth=(user, passw))
 
+        # if response.status_code == 200:
+        #     jsonresponse = response.json()
+        #     on = jsonresponse['on']
+            
+        #     if on == "True":
+        #         return True
+
+        return False        
+        
     def __repr__(self):
         return 'GameServer({})'.format(self.get_hostport())
 
 
 class Team(db.Model):
-    MAXPLAYERS = 7
+    MAXPLAYERS = 9
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -98,27 +123,29 @@ class Team(db.Model):
     logo = db.Column(db.String(10), default='')
     auths = db.Column(db.PickleType)
     public_team = db.Column(db.Boolean, index=True)
+    bracket = db.Column(db.String(30), default='')
 
     @staticmethod
-    def create(user, name, tag, flag, logo, auths, public_team=False):
+    def create(user, name, tag, flag, logo, auths, bracket, public_team=False):
         rv = Team()
         rv.user_id = user.id
-        rv.set_data(name, tag, flag, logo, auths, public_team and user.admin)
+        rv.set_data(name, tag, flag, logo, auths, bracket, public_team and user.admin)
         db.session.add(rv)
         return rv
 
-    def set_data(self, name, tag, flag, logo, auths, public_team):
+    def set_data(self, name, tag, flag, logo, auths, bracket, public_team):
         self.name = name
         self.tag = tag
         self.flag = flag.lower() if flag else ''
         self.logo = logo
         self.auths = auths
+        self.bracket = bracket
         self.public_team = public_team
 
     def can_edit(self, user):
         if not user:
             return False
-        if self.user_id == user.id:
+        if self.user_id == user.id or user.admin:
             return True
         return False
 
@@ -140,7 +167,7 @@ class Team(db.Model):
 
     def get_recent_matches(self, limit=10):
         if self.public_team:
-            matches = Match.query.order_by(-Match.id).limit(100).from_self()
+            matches = Match.query.order_by(-Match.id).limit(1000).from_self()
         else:
             owner = User.query.get_or_404(self.user_id)
             matches = owner.matches
@@ -148,12 +175,21 @@ class Team(db.Model):
         recent_matches = matches.filter(
             ((Match.team1_id == self.id) | (Match.team2_id == self.id)) & (
                 Match.cancelled == False) & (Match.start_time != None)  # noqa: E712
-        ).order_by(-Match.id).limit(5)
+        ).order_by(-Match.id).limit(10)
 
         if recent_matches is None:
             return []
         else:
             return recent_matches
+
+    # def get_all_publicteams():
+        # if not user:
+        #     return False
+
+        # if user.admin:
+        #     teams = Team.query.order_by(-Team.id).from_self()
+        #     public_teams = teams.filter(Team.public_team == True)
+        #     return public_teams
 
     def get_vs_match_result(self, match_id):
         other_team = None
@@ -215,7 +251,7 @@ class Team(db.Model):
     def get_name_url_html(self):
         return Markup('<a href="{}">{}</a>'.format(self.get_url(), self.name))
 
-    def get_logo_or_flag_html(self, scale=1.0, other_team=None):
+    def get_logo_or_flag_html(self, scale=0.75, other_team=None):
         if logos.has_logo(self.logo) and (other_team is None or logos.has_logo(other_team.logo)):
             return self.get_logo_html(scale)
         else:
@@ -233,6 +269,11 @@ class Match(db.Model):
         db.Integer, db.ForeignKey('game_server.id'), index=True)
     team1_id = db.Column(db.Integer, db.ForeignKey('team.id'))
     team2_id = db.Column(db.Integer, db.ForeignKey('team.id'))
+    mappick_team1 = db.Column(db.String(40), default='')
+    mappick_team2 = db.Column(db.String(40), default='')
+    mappick_bo3 = db.Column(db.String(40), default='')
+    sidepick_team1 = db.Column(db.String(2), default='')
+    sidepick_team2 = db.Column(db.String(2), default='')
     team1_string = db.Column(db.String(32), default='')
     team2_string = db.Column(db.String(32), default='')
     winner = db.Column(db.Integer, db.ForeignKey('team.id'))
@@ -255,7 +296,8 @@ class Match(db.Model):
 
     @staticmethod
     def create(user, team1_id, team2_id, team1_string, team2_string,
-               max_maps, skip_veto, title, veto_mappool, server_id=None):
+               max_maps, skip_veto, title, veto_mappool, server_id=None,
+               mappick_team1=None,mappick_team2=None,sidepick_team1=None,sidepick_team2=None,mappick_bo3=None):
         rv = Match()
         rv.user_id = user.id
         rv.team1_id = team1_id
@@ -265,6 +307,11 @@ class Match(db.Model):
         rv.veto_mappool = ' '.join(veto_mappool)
         rv.server_id = server_id
         rv.max_maps = max_maps
+        rv.mappick_team1 = mappick_team1
+        rv.mappick_team2 = mappick_team2
+        rv.mappick_bo3 = mappick_bo3
+        rv.sidepick_team1 = sidepick_team1
+        rv.sidepick_team2 = sidepick_team2
         rv.api_key = ''.join(random.SystemRandom().choice(
             string.ascii_uppercase + string.digits) for _ in range(24))
         db.session.add(rv)
@@ -275,12 +322,10 @@ class Match(db.Model):
             return 'Pending'
         elif self.live():
             team1_score, team2_score = self.get_current_score()
-            return 'Live, {}:{}'.format(team1_score, team2_score)
+            return 'Live, {} : {}'.format(team1_score, team2_score)
         elif self.finished():
             t1score, t2score = self.get_current_score()
-            min_score = min(t1score, t2score)
-            max_score = max(t1score, t2score)
-            score_string = '{}:{}'.format(max_score, min_score)
+            score_string = '{} : {}'.format(t1score, t2score)
 
             if not show_winner:
                 return 'Finished'
@@ -318,6 +363,34 @@ class Match(db.Model):
 
     def get_server(self):
         return GameServer.query.filter_by(id=self.server_id).first()
+    
+    def demomap1_exists(self):
+        filename = '{}map1{}.zip'.format(self.id, self.mappick_team1)
+        return os.path.isfile('/home/ftpdemos/{}'.format(filename))
+
+    def demomap2_exists(self):
+        filename = '{}map2{}.zip'.format(self.id, self.mappick_team2)
+        return os.path.isfile('/home/ftpdemos/{}'.format(filename))
+
+    def demomap3_exists(self):
+        filename = '{}map3{}.zip'.format(self.id, self.mappick_bo3)
+        return os.path.isfile('/home/ftpdemos/{}'.format(filename))
+
+    def get_server_gotv(self):
+        gs = GameServer()
+        gs = GameServer.query.filter_by(id=self.server_id).first()
+        if gs.gotv_port is None:
+            return ""
+        
+        return "connect " + gs.ip_string + ":" + str(gs.gotv_port)
+
+    def get_match_deleteable(self):
+        mt = Match()
+        mt = Match.query.filter_by(id=self.id).first()
+        if mt.cancelled and mt.start_time == None:
+            return True
+
+        return False
 
     def get_current_score(self):
         if self.max_maps == 1:
@@ -383,11 +456,18 @@ class Match(db.Model):
         d['matchid'] = str(self.id)
         d['match_title'] = self.title
 
-        d['skip_veto'] = self.skip_veto
+        d['skip_veto'] = True
+
         if self.max_maps == 2:
             d['bo2_series'] = True
         else:
             d['maps_to_win'] = self.max_maps / 2 + 1
+
+        d['mappick_team1'] = self.mappick_team1
+        d['mappick_team2'] = self.mappick_team2
+        d['mappick_bo3'] = self.mappick_bo3
+        d['sidepick_team1'] = self.sidepick_team1
+        d['sidepick_team2'] = self.sidepick_team2
 
         def add_team_data(teamkey, teamid, matchtext):
             team = Team.query.get(teamid)
@@ -419,14 +499,11 @@ class Match(db.Model):
             d['maplist'] = []
             for map in self.veto_mappool.split():
                 d['maplist'].append(map)
-				
-                
-        if 'SPECTATOR_IDS' in app.config:
-            d['spectators'] = {"players": app.config['SPECTATOR_IDS']}
-        
-        if 'MIN_SPECTATORS_TO_READY' in app.config:
-            d['min_spectators_to_ready'] = app.config['MIN_SPECTATORS_TO_READY']
-        
+        else:
+            d['maplist'] = []
+            d['maplist'].append(self.mappick_team1)
+            d['maplist'].append(self.mappick_team2)
+            d['maplist'].append(self.mappick_bo3)
 
         return d
 

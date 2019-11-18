@@ -3,25 +3,115 @@
 
   <head>
     <link rel="shortcut icon" href="/static/img/favicon.ico" >
-      <title>Get5 Web Panel</title>
+      <title>Uniliga CSGOPanel by superdaN1</title>
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+      <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+      <!--
       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
 
       <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-
+      -->
+      
       <link rel="stylesheet" href="/static/css/chosen.min.css">
       <link rel="stylesheet" href="/static/css/get5.css">
       <script src="/static/js/chosen.jquery.min.js"></script>
-
+      
       <meta name="viewport" content = "width=device-width, initial-scale=1.0">
       <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   </head>
 
   <body>
     <div id="header">
+      <!-- <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="/matches">
+          <img src="../static/img/uniligalogo.png" width="30" height="38" class="d-inline-block align-top" alt=""> 
+          Uniliga CSGO
+        </a>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item ">
+              <a class="nav-link active" id="matches" href="/matches">All Matches <span class="sr-only">(current)</span></a>
+            </li>
+            {% if user %}
+            <a class="nav-item nav-link" id="mymatches" href="/mymatches">My Matches</a>
+            <a class="nav-item nav-link" id="match_create" href="/match/create">Create a Match</a>
+            <a class="nav-item nav-link" id="myteams" href="/myteams">All Teams</a>
+            <a class="nav-item nav-link" id="team_create" href="/team/create">Create a Team</a>
+            <a class="nav-item nav-link" id="myservers" href="/myservers">All Servers</a>
+            <a class="nav-item nav-link" id="server_create" href="/server/create">Add a Server</a>
+            <a class="nav-item nav-link" href="/logout">Logout</a>
+            {% else %}
+            <li class="nav-item navbar-right"></li>
+              <a href="/login">  <img src="/static/img/login_small.png" height="18"/></a></li>
+            <li class="nav-item"></li>
+            {% endif %}
+          </div>
+        </div>
+      </nav> -->
+      <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+          <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+              <ul class="navbar-nav mr-auto">
+                  <li class="nav-item active">
+                      <a class="nav-link active" id="matches" href="/matches">All Matches <span class="sr-only">(current)</span></a>
+                  </li>
+                  {% if user %}
+                  <li class="nav-item">
+                      <a class="nav-item nav-link" id="mymatches" href="/mymatches">My Matches</a>
+                  </li>
+                  <li class="nav-item">
+                      <a class="nav-item nav-link" id="match_create" href="/match/create">Create Match</a>
+                  </li>
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownServer" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Server
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownServers">
+                      <a class="dropdown-item" id="myservers" href="/myservers">All Servers</a>
+                      <a class="dropdown-item"  id="server_create" href="/server/create">Add a Server</a>
+                    </div>
+                  </li>
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownTeam" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Team
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownTeams">
+                      <a class="dropdown-item" id="myteams" href="/myteams">All Teams</a>
+                      <a class="dropdown-item" id="team_create" href="/team/create">Create a Team</a>
+                    </div>
+                  </li>
+                  {% else %}
 
+                  {% endif %}
+              </ul>
+          </div>
+          <div class="mx-auto order-0">
+              <a class="navbar-brand mx-auto" href="/matches">Uniliga CSGOPanel by superdaN1</a>
+              <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".dual-collapse2">
+                  <span class="navbar-toggler-icon"></span>
+                  <!-- <img src="../static/img/uniligalogo.png" width="30" height="38" class="d-inline-block align-top" alt="">  -->
+              </button>
+          </div>
+          <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+              <ul class="navbar-nav ml-auto">
+                {% if user %}
+                <li class="nav-item">
+                    <a class="nav-item nav-link" href="/logout">Logout</a>
+                </li>
+                {% else %}
+                <li class="nav-item"></li>
+                <a href="/login">  <img src="/static/img/login_small.png" height="18"/></a></li>
+                <li class="nav-item"></li>
+                {% endif %}
+              </ul>
+          </div>
+      </nav>
+      <br><br>
+      <!--
       <nav class="navbar navbar-default">
         <div class="container-fluid">
           <div class="navbar-header">
@@ -30,45 +120,50 @@
 	        	<span class="icon-bar"></span>
             		<span class="icon-bar"></span> 
       			</button>
-            <a class="navbar-brand" href="/">Get5 Web Panel</a>
+            <a class="navbar-brand" href="/">Get5 - UEG:CSGO Web Panel</a>
           </div>
-	<div class="collapse navbar-collapse" id="myNavbar">
-          <ul class="nav navbar-nav">
-            <li><a id="matches" href="/matches">All Matches</a></li>
-            {% if user %}
-            <li><a id="mymatches" href="/mymatches">My Matches</a></li>
-            <li><a id="match_create" href="/match/create">Create a Match</a></li>
-            <li><a id="myteams" href="/myteams">My Teams</a></li>
-            <li><a id="team_create" href="/team/create">Create a Team</a></li>
-            <li><a id="myservers" href="/myservers">My Servers</a></li>
-            <li><a id="server_create" href="/server/create">Add a Server</a></li>
-            <li><a href="/logout">Logout</a></li>
-            {% else %}
-            <li><a href="/login">  <img src="/static/img/login_small.png" height="18"/></a></li>
-            {% endif %}
-          </ul>
-        </div>
+	        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav">
+              <li><a id="matches" href="/matches">All Matches</a></li>
+              {% if user %}
+              <li><a id="mymatches" href="/mymatches">My Matches</a></li>
+              <li><a id="match_create" href="/match/create">Create a Match</a></li>
+              <li><a id="myteams" href="/myteams">All Teams</a></li>
+              <li><a id="team_create" href="/team/create">Create a Team</a></li>
+              <li><a id="myservers" href="/myservers">All Servers</a></li>
+              <li><a id="server_create" href="/server/create">Add a Server</a></li>
+              <li><a href="/logout">Logout</a></li>
+              {% else %}
+              <li><a href="/login">  <img src="/static/img/login_small.png" height="18"/></a></li>
+              {% endif %}
+            </ul>
+          </div>
       </nav>
-	</div>
+      -->
     </div>
+  </div>
 
 
     <div class="container">
       {% block content %}
       {% endblock %}
     </div>
-
-    <div class="panel-footer text-muted">
-      <p>
-        Powered by <a href="http://steampowered.com">Steam</a> -
-        <a href="/metrics">Stats</a>
-        {% if COMMIT_STRING %} - Version <a href="https://github.com/splewis/get5-web">{{COMMIT_STRING}}+</a> {% endif %}
-      </p>
-    </div>
-
+    <br>
+    <br>
+    <br>
+    <footer>
+        <div class="container">
+          <span class="text-muted"><p>
+              Powered by <a href="http://steampowered.com">Steam</a> -
+              <a href="/metrics">Stats</a>
+              {% if COMMIT_STRING %} - Version <a href="https://github.com/splewis/get5-web">{{COMMIT_STRING}}+</a> {% endif %}
+              - superdaN1
+            </p></span>
+        </div>
+      </footer>
   </body>
 
-  <script>
+  <!-- <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -76,6 +171,6 @@
 
   ga('create', 'UA-49074813-2', 'auto');
   ga('send', 'pageview');
-  </script>
+  </script> -->
 
 </html>

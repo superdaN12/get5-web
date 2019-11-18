@@ -1,7 +1,10 @@
+{% from "macros.html" import show_flashed_messages %}
+
 {% extends "layout.html" %}
 {% block content %}
 
 <div id="content">
+  {{ show_flashed_messages() }}
 
 <ul class="list-group">
 
@@ -12,7 +15,9 @@
 
   {% else %}
 
-  <table class="table table-striped">
+  <h2> Public Servers</h2>
+  <br>
+  <table class="table table-striped table-hover table-bordered">
     <thead>
       <tr>
         <th>Server ID</th>
@@ -20,7 +25,8 @@
         <th>IP Address</th>
         <th>Port</th>
         <th>Status</th>
-        <th></th>
+        <th>Dathost</th>
+        <th>Edit</th>
       </tr>
     </thead>
     <tbody>
@@ -38,19 +44,74 @@
           Free
           {% endif %}
         </td>
-
         <td>
-          <a href="/server/{{server.id}}/edit" class="btn btn-primary btn-xs">Edit</a>
-          {% if not server.in_use %}
-          <a href="/server/{{server.id}}/delete" class="btn btn-danger btn-xs">Delete</a>
-          {% endif %}
+          <a href="/server/{{server.id}}/start" class="btn btn-success btn-sm">Start Server</a>
+          <!-- {% if not server.get_dathost_ison %}
+            <button type="button" class="btn btn-success">Start</button>
+          {% else %}
+            <button type="button" class="btn btn-danger">Stop</button>
+          {% endif %} -->
+        </td>
+        <td>
+          <div class="btn-group" role="group" aria-label="Edit">
+            <a href="/server/{{server.id}}/edit" class="btn btn-primary btn-sm">Edit</a>
+            {% if not server.in_use %}
+            <a href="/server/{{server.id}}/delete" class="btn btn-danger btn-sm">Delete</a>
+            {% endif %}
+          </div>
         </td>
       </tr>
     {% endfor %}
 
     </tbody>
   </table>
+
+  <br><br><br>
+  <h2> Own (private) Servers</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Server ID</th>
+        <th>Display Name</th>
+        <th>IP Address</th>
+        <th>Port</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+
+    {% for server in ownservers %}
+    {% if (server.public_server == False) %}
+      <tr>
+        <td>{{ server.id }}</td>
+        <td>{{ server.display_name }}</td>
+        <td>{{ server.ip_string }}</td>
+        <td>{{ server.port }}</td>
+        <td>
+          {% if server.in_use %}
+          In use
+          {% else %}
+          Free
+          {% endif %}
+        </td>
+
+        <td>
+          <a href="/server/{{server.id}}/edit" class="btn btn-primary btn-sm">Edit</a>
+          {% if not server.in_use %}
+          <a href="/server/{{server.id}}/delete" class="btn btn-danger btn-sm">Delete</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endif %}
+    {% endfor %}
+
+    </tbody>
+  </table>
+
+
   {% endif %}
+
 
 </div>
 

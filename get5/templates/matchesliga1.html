@@ -1,0 +1,224 @@
+{% from "macros.html" import pagination_buttons, pagination_active %}
+
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div id="content">
+  <div class="container-fluid">
+    <div class="row justify-content-between">
+      <div class="col">
+        <h1>
+            {% if my_matches %}
+            Your matches
+            {% elif all_matches %}
+            <small class="text-muted"><b>Uniliga CS:GO Winter 19/20</small><br>All Matches</b>
+            {% else %}
+            Matches for <a href="/user/{{ match_owner.id }}"> {{ match_owner.name }}</a>
+            {% endif%}
+          </h1>
+      </div>
+      <div class="col">
+        <div class="btn-group dropleft float-right">
+          <button type="button" class="btn btn-info dropdown-toggle float-right" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Zu den Toornament Ligen
+          </button>
+          <div class="dropdown-menu">
+            <a class="dropdown-item" href="https://www.toornament.com/en_US/tournaments/2845770174728544256/stages/2878093854233624576/groups/2878093854804049941/" target="_blank">Liga 1</a>
+            <a class="dropdown-item" href="https://www.toornament.com/en_US/tournaments/2845774771364192256/stages/2962213516992454656/#nogo" target="_blank">Liga 2</a>
+            <a class="dropdown-item" href="https://www.toornament.com/en_US/tournaments/2845777171706601472/stages/2962302279099695104/#nogo" target="_blank">Liga 3</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <br>
+    <br>
+    <div class="card shadow">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs">
+          <li class="nav-item">
+            <a class="nav-link text-dark" href="/matches">All</a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link text-dark active" href="/matchesliga1">Liga 1</a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link text-dark" href="/matchesliga2">Liga 2</a>
+            </li>
+          <li class="nav-item">
+            <a class="nav-link text-dark" href="/matchesliga3">Liga 3</a>
+          </li>
+        </ul>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive ">
+          <table class="table table-striped table-hover table-bordered">
+            <thead class="thead-dark">
+              <tr>
+                <th>ID</th> <!-- ID -->
+                <th>Team A</th><!-- TeamA -->
+                <th>Team B</th><!-- TeamB -->
+                <th>Status</th>
+                {% if my_matches %}
+                {% else %}
+                <th>GOTV</th><!-- GOTV -->
+                {% endif %}
+                {% if my_matches %}
+                <th>Server</th><!-- Server -->
+                {% endif %}
+                {% if my_matches %}
+                <th></th><!-- CancelButton -->
+                {% else %}
+                <th>Admin</th><!-- Owner -->
+                {% endif %}
+              </tr>
+            </thead>
+
+            <tbody>
+            {% for match in matches.items %}
+              <tr>
+                  <th class="text-center align-middle" scope="row"><a class="text-info" href="/match/{{match.id}}"> {{match.id}}</a></th> <!-- ID -->
+                <td class="align-middle"><!-- Team A -->
+                  {{ match.get_team1().get_logo_html(0.75) }}
+                  <a class="text-dark" href="/team/{{match.get_team1().id}}"> {{match.get_team1().name}}</a>
+                </td>
+                <td class="align-middle"><!-- TeamB -->
+                  {{ match.get_team2().get_logo_html(0.75) }}
+                  <a class="text-dark" href="/team/{{ match.get_team2().id }}"> {{match.get_team2().name}}</a>
+                </td>
+                <td class="align-middle"><!-- Status -->
+                  {% if match.pending() %}
+                    <i>{{ match.get_status_string() }}</i>
+                  {% elif match.live() %}
+                    <a href="/match/{{match.id}}"><button type="button" class="btn btn-success btn-sm">
+                      <div class="spinner-grow text-danger spinner-grow-sm" role="status">
+                       
+                      </div>
+                      {{ match.get_status_string() }}
+                    </button></a>
+                  {% else %}
+                    {{ match.get_status_string() }}
+                  {% endif %}
+                </td>
+                {% if my_matches %}
+                <!-- dont show column -->
+                {% else %}
+                <td class="text-center align-middle"><!-- GOTV -->
+                    {% if match.pending() or match.live() %}
+                      <!-- Button trigger modal -->
+                      <button type="button" class="btn btn-dark btn-sm" data-toggle="modal" data-target="#matchmodal{{match.id}}">
+                        GOTV
+                      </button>
+                      <!-- Modal -->
+                      <div class="modal fade" id="matchmodal{{match.id}}" tabindex="-1" role="dialog" aria-labelledby="matchmodal{{match.id}}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                          <div class="modal-content">
+                            <div class="modal-header">
+                              <h5 class="modal-title" id="matchmodal{{match.id}}">{{match.get_team1().name}} vs. {{ match.get_team2().name }}</h5>
+                              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                              </button>
+                            </div>
+                            <div class="modal-body">
+                              <div class="container-fluid">
+                                <div class="row">
+                                  <div class="col-md-7"><input type="text" class="form-control" id="gotv-ip{{match.id}}" value="{{match.get_server_gotv()}}"></div>
+                                  <div class="col-md-3 ml-auto"><button type="button" class="btn btn-light btn-xs" onclick="copyGotvIp('{{match.id}}')">Copy IP</a></div>
+                                </div>
+                              </div>
+                              
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    {% endif %}
+                </td>
+                {% endif %}
+
+                {% if my_matches %}
+                  <td>{% if match.get_server() is not none   %} {{ match.get_server().get_display() }} {% endif %}</td>
+                {% else %}
+                  {% if my_matches %}
+                  <td>{% if match.get_server() is not none   %} {{ match.get_server().get_displayname() }} {% endif %}</td>
+                  {% endif %}
+                {% endif %}
+                
+                {% if my_matches %}
+                <td class="align-middle">
+                  {% if match.pending() or match.live() %}
+                    <a href="/match/{{match.id}}/cancel" class="btn btn-danger btn-sm align-right">Cancel</a>
+                  {% elif match.get_match_deleteable() %}
+                    <a href="/match/{{match.id}}/delete" class="btn btn-danger btn-sm align-right">Delete</a>
+                  {% endif %}
+                </td> 
+                {% endif %}
+                {% if my_matches %}
+                {% else %}
+                <td class="align-middle"> <a class="text-dark" href="{{ match.get_user().get_url() }}"> {{ match.get_user().name }} </a> </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+      </div>      
+
+
+    </div>
+    <br><br>
+    <div class="container">
+      <div class="text-center">
+        {% for match_num in matches.iter_pages() %}
+          {% if match_num %}
+            {% if matches.page == match_num %}
+              <a class="btn btn-dark mb-4 shadow" id="page{{match_num}}" href="{{request.path}}?page={{match_num}}">{{ match_num }}</a>
+            {% else %}
+              <a class="btn btn-outline-dark mb-4 shadow" id="page{{match_num}}"" href="{{request.path}}?page={{match_num}}">{{ match_num }}</a>
+            {% endif %}
+          {% else %}
+            ...
+          {% endif %}
+
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+{% if my_matches %}
+<script>
+    $(document).ready(function () {
+    $("#mymatches").parent().addClass("active"); })
+</script>
+{% endif %}
+
+{% if all_matches %}
+<script>
+function copyGotvIp(param) {
+  /* Get the text field */
+  var copyText = document.getElementById("gotv-ip" + param);
+
+  /* Select the text field */
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); /*For mobile devices*/
+
+  /* Copy the text inside the text field */
+  document.execCommand("copy");
+} 
+</script>
+
+<script>
+    $(document).ready(function () {
+    $("#matches").parent().addClass("active"); })
+</script>
+{% endif %}
+
+{% endblock %}

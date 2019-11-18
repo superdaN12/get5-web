@@ -3,9 +3,9 @@
 
 <div id="content">
 
-  <div class="panel panel-default">
-    <div class="panel-heading">User information</div>
-    <div class="panel-body">
+  <div class="card">
+    <div class="card-header">User information</div>
+    <div class="card-body">
       Name: {{displaying_user.name}}<br>
       Steam account: <a href="{{displaying_user.get_steam_url()}}"> {{displaying_user.steam_id}}</a> <br>
       Teams saved: <a href="/teams/{{displaying_user.id}}"> {{displaying_user.teams.count()}}</a> <br>
@@ -13,9 +13,9 @@
     </div>
   </div>
 
-  <div class="panel panel-default">
-    <div class="panel-heading">Recent Matches</div>
-    <div class="panel-body">
+  <div class="card">
+    <div class="card-header">Recent Matches</div>
+    <div class="card-body">
       {% for match in displaying_user.get_recent_matches() %}
         <a href="/match/{{match.id}}">#{{match.id}}</a>: {{ match.get_vs_string() }}
         <br>

@@ -8,68 +8,69 @@
  {{ show_flashed_messages() }}
 
   <form role="form" action="" method="post" class="form-horizontal">
-
-      {{ form.csrf_token }}
-
-      <div class="form-group">
-        {{ form.server_id.label(class="col-sm-2 control-label") }}
-          <div class="col-sm-4">
-            {{ form.server_id(class="form-control input-sm") }}
-          </div>
-          <a href="/server/create" class="btn btn-primary">Create a server</a>
-      </div>
-
-      <br>
-
-      <div class="form-group">
-        {{ form.team1_id.label(class="col-sm-2 control-label") }}
-          <div class="col-sm-4">
-            {{ form.team1_id(class="form-control input-sm") }}
-          </div>
-          <a href="/team/create" class="btn btn-primary">Create a team</a>
-      </div>
-
-      {% if match_text_option %}
-      <div class="form-group">
-      {{ form.team1_string.label(class="col-sm-2 control-label") }}
+    {{ form.csrf_token }}
+    <div class="container">
+      <div class="form-group row">
+        {{ form.server_id.label(class="col-sm-1 control-label") }}
+        <div class="col-sm-3">
+          {{ form.server_id(class="form-control input-sm") }}
+        </div>
         <div class="col-sm-4">
+          <!-- <button type="submit" class="btn btn-outline-success btn-sm">
+            <a href="/match/startserver" class="">Start Server</a>
+          </button> -->
+          <a href="/server/create" class="btn btn-outline-primary btn-sm">Create a server</a>
+        </div>
+      </div>
+    </div>
+    <br>
+
+    <div class="container">
+      <div class="form-group row">
+        {{ form.team1_id.label(class="col-sm-1 control-label") }}
+        <div class="col-sm-3">
+          {{ form.team1_id(class="form-control input-sm") }}
+        </div>
+        <div class="col-sm-4">
+          <a href="/team/create" class="btn btn-outline-primary btn-sm">Create a team</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="form-group row">
+        {{ form.team2_id.label(class="col-sm-1 control-label") }}
+        <div class="col-sm-3">
+          {{ form.team2_id(class="form-control input-sm") }}
+        </div>
+      </div>
+    </div>
+<!--
+    {% if match_text_option %}
+    <div class="container">
+      <div class="form-group row">
+        <div class="col-md-4">
+          {{ form.team1_string.label(class="col-sm-2 control-label") }}
           {{ form.team1_string(class="form-control input-sm") }}
           <p class="help-block">The team title texts and match text are shown in freezetime to spectators: <a href="/static/img/matchtext_example.png" target="_blank">example</a> </p>
         </div>
       </div>
-      <br>
-      {% endif %}
-
-      <div class="form-group">
-        {{ form.team2_id.label(class="col-sm-2 control-label") }}
-          <div class="col-sm-4">
-            {{ form.team2_id(class="form-control input-sm") }}
+        <br>
+        <div class="col-sm-1">
+          {{ form.team2_string.label(class="col-sm-2 control-label") }}
+          <div class="col-md-4">
+            {{ form.team2_string(class="form-control input-sm") }}
           </div>
-      </div>
-
-      {% if match_text_option %}
-      <div class="form-group">
-      {{ form.team2_string.label(class="col-sm-2 control-label") }}
-        <div class="col-sm-4">
-          {{ form.team2_string(class="form-control input-sm") }}
         </div>
       </div>
-
-      <br>
-
-      <div class="form-group">
-      {{ form.match_title.label(class="col-sm-2 control-label") }}
-        <div class="col-sm-4">
-          {{ form.match_title(class="form-control input-sm") }}
-        </div>
-      </div>
-      {% endif %}
-
-      <br>
-
-      <div class="form group">
-      {{ form.series_type.label(class="col-sm-2 control-label") }}
-        <div class="col-sm-offset-2">
+    </div>
+    {% endif %}
+-->
+    <br>
+  <div class="container">
+    <div class="form group row">
+      {{ form.series_type.label(class="col-sm-1 control-label") }}
+        <div class="col-sm-6">
           {% for subfield in form.series_type %}
           <tr>
             <td>{{ subfield }}</td>
@@ -79,9 +80,76 @@
         {% endfor %}
         </div>
       </div>
+  </div>
+      <hr>
 
-      <br>
 
+  <div class="container">
+    <div class="form group row">
+      {{ form.match_title.label(class="col-sm-1 control-label") }}
+      <div class="col-sm-4">
+        {{ form.match_title(class="form-control input-sm") }}
+      </div>
+    </div>
+  </div>
+      
+  <hr>
+  <div class="container">
+    <div class="form group row">
+      <div class="col-sm-1">
+        <h6><b>Map 1:</b></h6>
+      </div>
+      <div class="col-sm-4">
+        {{ form.mappick_team1.label(class="control-label") }}
+        {{ form.mappick_team1(class="form-control input-sm") }}
+        {{ form.sidepick_team2.label(class="control-label") }}
+        <br>
+        {% for subfield in form.sidepick_team2 %}
+          <tr>
+              <td>{{ subfield.label }}</td>
+              <td></td>
+              <td>{{ subfield }}</td>
+          </tr>
+          {% endfor %}
+      </div>
+    </div>
+  </div>
+  <br>
+  <div class="container">
+    <div class="form group row">
+      <div class="col-sm-1">
+        <h6><b>Map 2:</b></h6>
+      </div>
+      <div class="col-sm-4">
+        {{ form.mappick_team2.label(class="control-label") }}
+        {{ form.mappick_team2(class="form-control input-sm") }}
+        {{ form.sidepick_team1.label(class="control-label") }}
+        <br>
+        {% for subfield in form.sidepick_team1 %}
+        <tr>
+            <td>{{ subfield.label }}</td>
+            <td></td>
+            <td>{{ subfield }}</td>
+        </tr>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <br>
+    <div class="container">
+      <div class="form group row">
+        <div class="col-sm-1">
+          <h6><b>Map 3:</b></h6>
+        </div>
+        <div class="col-sm-4">
+            {{ form.mappick_bo3.label(class="control-label") }}
+            {{ form.mappick_bo3(class="form-control input-sm") }}
+          <b>Kniferound!</b>
+        </div>
+      </div>
+    </div>
+    <hr>
+<!-- 
       <div class="form-group">
         {{ form.veto_mappool.label(class="col-sm-2 control-label", style="height:50px") }}
         <div class="col-sm-offset-2">
@@ -94,15 +162,22 @@
           {% endfor %}
         </div>
       </div>
+-->
+  
+  <div class="container">
+  <div class="row">
+    <div class="col-sm-1">
+      
+    </div>
+    <div class="input submit col-sm-4">
+      <input type="submit" class="btn btn-success" value="Create Match">
+    </div>
+  </div>
+</div>
 
-      <div class="input submit col-sm-offset-1">
-        <input type="submit" class="btn btn-primary" value="Create Match">
-      </div>
-
-      <br>
-
+    
+  
   </form>
-
 </div>
 
 <script>

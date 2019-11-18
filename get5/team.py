@@ -51,11 +51,14 @@ class TeamForm(Form):
     auth5 = StringField('Player 5', validators=[valid_auth])
     auth6 = StringField('Player 6', validators=[valid_auth])
     auth7 = StringField('Player 7', validators=[valid_auth])
+    auth8 = StringField('Player 8', validators=[valid_auth])
+    auth9 = StringField('Player 9', validators=[valid_auth])
     public_team = BooleanField('Public Team')
+    bracket = StringField('Bracket')
 
     def get_auth_list(self):
         auths = []
-        for i in range(1, 8):
+        for i in range(1, 10):
             key = 'auth{}'.format(i)
             auths.append(self.data[key])
 
@@ -83,9 +86,9 @@ def team_create():
             tag = data['tag'].strip()
             flag = data['country_flag']
             logo = data['logo']
-
+            bracket = data['bracket']
             team = Team.create(g.user, name, tag, flag, logo,
-                               auths, data['public_team'] and g.user.admin)
+                               auths, bracket, data['public_team'] and g.user.admin)
 
             db.session.commit()
             app.logger.info(
@@ -125,6 +128,9 @@ def team_edit(teamid):
         auth5=team.auths[4],
         auth6=team.auths[5],
         auth7=team.auths[6],
+        auth8=team.auths[7],
+        auth9=team.auths[8],
+        bracket=team.bracket,
         public_team=team.public_team)
 
     if request.method == 'GET':
@@ -135,13 +141,10 @@ def team_edit(teamid):
         if request.method == 'POST':
             if form.validate():
                 data = form.data
-                public_team = team.public_team
-                if g.user.admin:
-                    public_team = data['public_team']
-
                 team.set_data(data['name'], data['tag'], data['country_flag'],
                               data['logo'], form.get_auth_list(),
-                              public_team)
+                              data['bracket'],
+                              data['public_team'] and g.user.admin)
                 db.session.commit()
                 return redirect('/teams/{}'.format(team.user_id))
             else:
@@ -184,12 +187,20 @@ def teams_user(userid):
 
     else:
         # Render teams page
-        my_teams = (g.user is not None and userid == g.user.id)
-        teams = user.teams.paginate(page, 20)
+        # test to show all teams to admins
+        my_teams =  (g.user is not None and userid == g.user.id)
+        admin = (g.user is not None and g.user.admin == True)
+
+        if admin:
+            teams = Team.query.order_by(Team.name).filter_by(
+            public_team=True).paginate(page, 20)
+
+        else: 
+            teams = user.teams.paginate(page, 20)
+
         return render_template(
             'teams.html', user=g.user, teams=teams, my_teams=my_teams,
                                page=page, owner=user)
-
 
 @team_blueprint.route('/myteams', methods=['GET'])
 def myteams():
